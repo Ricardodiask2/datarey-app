@@ -118,7 +118,7 @@
             // btnVoltarVersao
             // 
             this.btnVoltarVersao.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnVoltarVersao.Location = new System.Drawing.Point(788, 76);
+            this.btnVoltarVersao.Location = new System.Drawing.Point(744, 76);
             this.btnVoltarVersao.Name = "btnVoltarVersao";
             this.btnVoltarVersao.Size = new System.Drawing.Size(120, 31);
             this.btnVoltarVersao.TabIndex = 12;
