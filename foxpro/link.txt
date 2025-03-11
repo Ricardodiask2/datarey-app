@@ -1,0 +1,11 @@
+msvcr71.dll
+https://www.dropbox.com/scl/fi/jmt7b7zdky9dada873ccn/msvcr71.dll?rlkey=mbsiomxlp4y3z7osmnrh1vyd5&st=ygjtmm5k&dl=0
+
+vfp9r.dll
+https://www.dropbox.com/scl/fi/bw6yesfmipi3mqksyqkql/vfp9r.dll?rlkey=9a1r9k46f2o0j3ibosr3wty0r&st=70uz2zml&dl=0
+
+VFP9RENU.DLL
+https://www.dropbox.com/scl/fi/1owwj7yta8v66yc7rp1m7/VFP9RENU.DLL?rlkey=t5nd7ekh91xj3tchojlnvosbt&st=sfns287d&dl=0
+
+removerxml.exe
+https://www.dropbox.com/scl/fi/b7cqwcvq4c78tdafxrrkm/removerxml.exe?rlkey=y194os6vuk151dyg5to06t0cx&st=2clxrdfb&dl=0
