@@ -221,52 +221,52 @@ namespace WindowsFormsApp1
 
 
         private void btnAtualizarVersao_Click(object sender, EventArgs e)
-    {
-        try
         {
-            string url = "https://www.dropbox.com/s/q60j0ixqjcy0qpc/RF32.zip?dl=1";
-            string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
-            string caminhoZip = Path.Combine(pastaSistema, "RF32.zip");
-            string caminhoExtraido = Path.Combine(pastaSistema, "RF32.exe");
-            string caminhoAtual = Path.Combine(pastaSistema, "RF32.exe");
-            string caminhoBackup = Path.Combine(pastaSistema, "RF32.BKP");
-
-            // 1️⃣ Baixa o arquivo ZIP do Dropbox
-            using (WebClient client = new WebClient())
+            try
             {
-                client.DownloadFile(url, caminhoZip);
-            }
+                string url = "https://www.dropbox.com/s/q60j0ixqjcy0qpc/RF32.zip?dl=1";
+                string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
+                string caminhoZip = Path.Combine(pastaSistema, "RF32.zip");
+                string caminhoExtraido = Path.Combine(pastaSistema, "RF32.exe");
+                string caminhoAtual = Path.Combine(pastaSistema, "RF32.exe");
+                string caminhoBackup = Path.Combine(pastaSistema, "RF32.BKP");
 
-            // 2️⃣ Verifica se RF32 está rodando e encerra (caso tenha esquecido de fechar)
-            foreach (var process in Process.GetProcessesByName("RF32"))
+                // 1️⃣ Baixa o arquivo ZIP do Dropbox
+                using (WebClient client = new WebClient())
+                {
+                    client.DownloadFile(url, caminhoZip);
+                }
+
+                // 2️⃣ Verifica se RF32 está rodando e encerra (caso tenha esquecido de fechar)
+                foreach (var process in Process.GetProcessesByName("RF32"))
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                }
+
+                // 3️⃣ Faz backup da versão atual
+                if (File.Exists(caminhoAtual))
+                {
+                    File.Move(caminhoAtual, caminhoBackup);
+                }
+
+                // 4️⃣ Extrai o novo arquivo
+                ZipFile.ExtractToDirectory(caminhoZip, pastaSistema);
+
+                // 5️⃣ Deleta o arquivo ZIP baixado
+                File.Delete(caminhoZip);
+
+                MessageBox.Show("✅ RF32 atualizado com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
             {
-                process.Kill();
-                process.WaitForExit();
+                MessageBox.Show("Erro ao atualizar RF32: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
-            // 3️⃣ Faz backup da versão atual
-            if (File.Exists(caminhoAtual))
-            {
-                File.Move(caminhoAtual, caminhoBackup);
-            }
-
-            // 4️⃣ Extrai o novo arquivo
-            ZipFile.ExtractToDirectory(caminhoZip, pastaSistema);
-
-            // 5️⃣ Deleta o arquivo ZIP baixado
-            File.Delete(caminhoZip);
-
-            MessageBox.Show("✅ RF32 atualizado com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show("Erro ao atualizar RF32: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
 
 
 
-    private void groupBox1_Enter(object sender, EventArgs e)
+        private void groupBox1_Enter(object sender, EventArgs e)
         {
 
         }
@@ -567,97 +567,11 @@ namespace WindowsFormsApp1
 
 
 
-private void BtnRemoverXML_Click(object sender, EventArgs e)
-    {
-        try
+        private void BtnRemoverXML_Click(object sender, EventArgs e)
         {
-            // 📌 Define a pasta onde o aplicativo está rodando
-            string pastaBase = AppDomain.CurrentDomain.BaseDirectory;
 
-            // 📌 Caminho correto para a pasta IMPORTAR (onde os XMLs estão)
-            string pastaImportar = Path.Combine(pastaBase, "XML", "IMPORTAR");
-
-            // 📌 Caminho do console e do arquivo de chaves processadas
-            string pastaFerramenta = Path.Combine(pastaBase, "Ferramenta_XML");
-            string consoleExe = Path.Combine(pastaFerramenta, "removerxml.exe");
-            string logFile = Path.Combine(pastaFerramenta, "chaves_processadas.txt");
-
-            // 🔹 Garante que o console seja executado antes da verificação
-            if (!File.Exists(logFile))
-            {
-                if (File.Exists(consoleExe))
-                {
-                    Process.Start(consoleExe).WaitForExit();
-                }
-                else
-                {
-                    MessageBox.Show("Erro: O arquivo 'removerxml.exe' não foi encontrado!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-
-            // 🔹 Verifica se o log de chaves processadas foi gerado corretamente
-            if (File.Exists(logFile))
-            {
-                string[] chavesRemover = File.ReadAllLines(logFile);
-
-                // 🔹 Removemos os XMLs da pasta XML/IMPORTAR (se existir)
-                if (Directory.Exists(pastaImportar))
-                {
-                    RemoverXMLProcessados(pastaImportar, chavesRemover);
-                }
-                else
-                {
-                    MessageBox.Show("A pasta 'XML/IMPORTAR' não foi encontrada!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            else
-            {
-                MessageBox.Show("Erro: O arquivo 'chaves_processadas.txt' ainda não foi gerado. Verifique o 'removerxml.exe'.",
-                                "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            // Exibir mensagem de sucesso
-            MessageBox.Show("Processo concluído! Os arquivos XML processados foram removidos.",
-                            "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show("Erro ao processar e remover XMLs: " + ex.Message,
-                            "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    // 🔹 Função para remover arquivos XML processados
-    private void RemoverXMLProcessados(string pasta, string[] chavesRemover)
-    {
-        if (Directory.Exists(pasta))
-        {
-            string[] arquivosXml = Directory.GetFiles(pasta, "*.xml");
-            int arquivosDeletados = 0;
-
-            foreach (string arquivo in arquivosXml)
-            {
-                string conteudo = File.ReadAllText(arquivo);
-                if (chavesRemover.Any(chave => conteudo.Contains(chave)))
-                {
-                    File.Delete(arquivo);
-                    arquivosDeletados++;
-                }
-            }
-
-            if (arquivosDeletados > 0)
-            {
-                MessageBox.Show($"{arquivosDeletados} arquivos removidos na pasta: XML/IMPORTAR",
-                                "Arquivos Removidos", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-    }
-
-
-
-
-
+    
 
 
 
