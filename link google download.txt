@@ -1,0 +1,17 @@
+antes 
+https://drive.google.com/file/d/1b7F5FdPPwtPYw20T3aCtgsm94wgGvl7o/view?usp=sharing
+
+depois 
+https://drive.google.com/uc?export=download&id=1b7F5FdPPwtPYw20T3aCtgsm94wgGvl7o";
+
+
+
+padrão
+https://drive.google.com/uc?export=download&id=
+
+id
+1b7F5FdPPwtPYw20T3aCtgsm94wgGvl7o
+
+remover
+/view?usp=sharing
+

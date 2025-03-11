@@ -1,0 +1,116 @@
+        // 🔹 Realiza o backup dos arquivos DBF e atualiza a barra de progresso
+        // 🔹 Método para fazer backup dos arquivos DBF e atualizar a barra de progresso
+        private void btnBackupDBF_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Obtém a pasta onde o programa está sendo executado
+                string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Define a pasta de backup dentro da mesma pasta do sistema
+                string pastaBackup = Path.Combine(pastaSistema, "BackupDBF");
+
+                // Cria a pasta de backup se não existir
+                if (!Directory.Exists(pastaBackup))
+                {
+                    Directory.CreateDirectory(pastaBackup);
+                }
+
+                // Pega todos os arquivos .DBF dentro da pasta do sistema
+                string[] arquivosDBF = Directory.GetFiles(pastaSistema, "*.DBF");
+
+                // Se não houver arquivos DBF, avisa e sai
+                if (arquivosDBF.Length == 0)
+                {
+                    MessageBox.Show("Nenhum arquivo DBF encontrado na pasta!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Configura a barra de progresso
+                progressBarBackup.Minimum = 0;
+                progressBarBackup.Maximum = arquivosDBF.Length;
+                progressBarBackup.Value = 0;
+
+                // Copia os arquivos .DBF para a pasta de backup
+                foreach (string arquivo in arquivosDBF)
+                {
+                    string destino = Path.Combine(pastaBackup, Path.GetFileName(arquivo));
+                    File.Copy(arquivo, destino, true); // Copia arquivo com sobrescrita
+                    progressBarBackup.Value += 1; // Atualiza a barra de progresso
+                    Application.DoEvents(); // Atualiza a interface do usuário
+                }
+
+                MessageBox.Show("📂 Backup dos arquivos DBF concluído!", "Backup Finalizado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso após conclusão
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao realizar backup dos arquivos DBF: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso em caso de erro
+            }
+        }
+
+        private void btnReconstrucao_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Obtém a pasta onde o programa está rodando
+                string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Barra de progresso configuração
+                string[] padroesArquivos = new string[]
+                {
+            "*.cdx", "arqtemp*", "instanci.dbf", "ctrl*",
+            "T_*.*", "*.$*", "*.bak", "*.err", "*.ntx", "*.$MT",
+            "*.CUP", "T_.dbf", "vend*.dbf", "*.log", "*.TXT"
+                };
+
+                progressBarBackup.Minimum = 0;
+                progressBarBackup.Maximum = padroesArquivos.Length + 2; // +2 para deletar pasta BAK no início e no fim
+                progressBarBackup.Value = 0;
+
+                // Remove a pasta BAK no início
+                string pastaBak = Path.Combine(pastaSistema, "BAK");
+                if (Directory.Exists(pastaBak))
+                {
+                    Directory.Delete(pastaBak, true);
+                }
+                progressBarBackup.Value += 1;
+                Application.DoEvents();
+
+                // Deletando arquivos conforme a lista
+                foreach (string padrao in padroesArquivos)
+                {
+                    string[] arquivos = Directory.GetFiles(pastaSistema, padrao);
+                    foreach (string arquivo in arquivos)
+                    {
+                        File.Delete(arquivo);
+                    }
+                    progressBarBackup.Value += 1;
+                    Application.DoEvents();
+                }
+
+                // Remove a pasta BAK no final (caso tenha sido recriada)
+                if (Directory.Exists(pastaBak))
+                {
+                    Directory.Delete(pastaBak, true);
+                }
+                progressBarBackup.Value += 1;
+                Application.DoEvents();
+
+                // Executa o RF32 INICIO para iniciar o sistema
+                Process.Start("RF32", "INICIO");
+
+                MessageBox.Show("🔄 Arquivos deletados, RF32 iniciado.", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro durante a reconstrução: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBarBackup.Value = 0;
+            }
+                  
+        }
+    }
+}
+

@@ -1,0 +1,247 @@
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.ServiceProcess;
+using System.Windows.Forms;
+
+namespace ManutencaoSistema
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+            AtualizarStatusRDP(); // Verifica o status da Área Remota ao iniciar
+        }
+
+        // 🔹 Atualiza o status da Área Remota (Ativada ou Desativada)
+        private void AtualizarStatusRDP()
+        {
+            try
+            {
+                ServiceController service = new ServiceController("TermService");
+
+                if (service.Status == ServiceControllerStatus.Running)
+                {
+                    lblStatusRDP.Text = "🟢 Área Remota Ativada";
+                    lblStatusRDP.ForeColor = Color.Green;
+                }
+                else
+                {
+                    lblStatusRDP.Text = "🔴 Área Remota Desativada";
+                    lblStatusRDP.ForeColor = Color.Red;
+                }
+            }
+            catch (Exception ex)
+            {
+                lblStatusRDP.Text = "⚠️ Erro ao verificar o status";
+                lblStatusRDP.ForeColor = Color.Orange;
+            }
+        }
+
+        // 🔹 Desativa a Área Remota e bloqueia acesso
+        private void btnDesativarRDP_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start("cmd.exe", "/c query session | find \"Active\" > temp.txt && for /F \"tokens=3\" %i in (temp.txt) do logoff %i");
+
+                string[] dependencias = { "SessionEnv", "UmRdpService", "Netman" };
+                foreach (string dep in dependencias)
+                {
+                    ServiceController depService = new ServiceController(dep);
+                    if (depService.Status == ServiceControllerStatus.Running)
+                    {
+                        depService.Stop();
+                        depService.WaitForStatus(ServiceControllerStatus.Stopped);
+                    }
+                }
+
+                ServiceController service = new ServiceController("TermService");
+                if (service.Status == ServiceControllerStatus.Running)
+                {
+                    service.Stop();
+                    service.WaitForStatus(ServiceControllerStatus.Stopped);
+                }
+                SetServiceStatus("TermService", false);
+
+                Process.Start("cmd.exe", "/c netsh advfirewall firewall add rule name=\"Bloqueio RDP\" dir=in action=block protocol=TCP localport=3389");
+
+                MessageBox.Show("🔴 Área Remota Desativada!", "Status", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                AtualizarStatusRDP(); // Atualiza o status no Label
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao desativar a Área Remota: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // 🔹 Ativa a Área Remota e libera acesso
+        private void btnAtivarRDP_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start("cmd.exe", "/c netsh advfirewall firewall delete rule name=\"Bloqueio RDP\"");
+
+                SetServiceStatus("TermService", true);
+                ServiceController service = new ServiceController("TermService");
+                service.Start();
+                service.WaitForStatus(ServiceControllerStatus.Running);
+
+                MessageBox.Show("🟢 Área Remota Ativada!", "Status", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                AtualizarStatusRDP(); // Atualiza o status no Label
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao ativar a Área Remota: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // 🔹 Define o status do serviço (Ativar ou Desativar)
+        private void SetServiceStatus(string serviceName, bool enable)
+        {
+            string command = enable
+                ? $"sc config {serviceName} start= auto"
+                : $"sc config {serviceName} start= disabled";
+
+            Process.Start("cmd.exe", "/c " + command);
+        }
+
+        // 🔹 Finaliza todos os processos RF32 em todas as sessões
+        private void btnPararRF32_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                foreach (var process in Process.GetProcessesByName("RF32"))
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                }
+
+                MessageBox.Show("🔴 Todos os processos RF32 foram encerrados!", "Processos Encerrados", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao encerrar RF32: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // 🔹 Realiza o backup dos arquivos DBF e atualiza a barra de progresso
+        // 🔹 Método para fazer backup dos arquivos DBF e atualizar a barra de progresso
+        private void btnBackupDBF_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Obtém a pasta onde o programa está sendo executado
+                string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Define a pasta de backup dentro da mesma pasta do sistema
+                string pastaBackup = Path.Combine(pastaSistema, "BackupDBF");
+
+                // Cria a pasta de backup se não existir
+                if (!Directory.Exists(pastaBackup))
+                {
+                    Directory.CreateDirectory(pastaBackup);
+                }
+
+                // Pega todos os arquivos .DBF dentro da pasta do sistema
+                string[] arquivosDBF = Directory.GetFiles(pastaSistema, "*.DBF");
+
+                // Se não houver arquivos DBF, avisa e sai
+                if (arquivosDBF.Length == 0)
+                {
+                    MessageBox.Show("Nenhum arquivo DBF encontrado na pasta!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Configura a barra de progresso
+                progressBarBackup.Minimum = 0;
+                progressBarBackup.Maximum = arquivosDBF.Length;
+                progressBarBackup.Value = 0;
+
+                // Copia os arquivos .DBF para a pasta de backup
+                foreach (string arquivo in arquivosDBF)
+                {
+                    string destino = Path.Combine(pastaBackup, Path.GetFileName(arquivo));
+                    File.Copy(arquivo, destino, true); // Copia arquivo com sobrescrita
+                    progressBarBackup.Value += 1; // Atualiza a barra de progresso
+                    Application.DoEvents(); // Atualiza a interface do usuário
+                }
+
+                MessageBox.Show("📂 Backup dos arquivos DBF concluído!", "Backup Finalizado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso após conclusão
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao realizar backup dos arquivos DBF: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso em caso de erro
+            }
+        }
+
+        private void btnReconstrucao_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Obtém a pasta onde o programa está rodando
+                string pastaSistema = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Barra de progresso configuração
+                string[] padroesArquivos = new string[]
+                {
+            "*.cdx", "arqtemp*", "instanci.dbf", "ctrl*",
+            "T_*.*", "*.$*", "*.bak", "*.err", "*.ntx", "*.$MT",
+            "*.CUP", "T_.dbf", "vend*.dbf", "*.log", "*.TXT"
+                };
+
+                progressBarBackup.Minimum = 0;
+                progressBarBackup.Maximum = padroesArquivos.Length + 2; // +2 para deletar pasta BAK no início e no fim
+                progressBarBackup.Value = 0;
+
+                // Remove a pasta BAK no início
+                string pastaBak = Path.Combine(pastaSistema, "BAK");
+                if (Directory.Exists(pastaBak))
+                {
+                    Directory.Delete(pastaBak, true);
+                }
+                progressBarBackup.Value += 1;
+                Application.DoEvents();
+
+                // Deletando arquivos conforme a lista
+                foreach (string padrao in padroesArquivos)
+                {
+                    string[] arquivos = Directory.GetFiles(pastaSistema, padrao);
+                    foreach (string arquivo in arquivos)
+                    {
+                        File.Delete(arquivo);
+                    }
+                    progressBarBackup.Value += 1;
+                    Application.DoEvents();
+                }
+
+                // Remove a pasta BAK no final (caso tenha sido recriada)
+                if (Directory.Exists(pastaBak))
+                {
+                    Directory.Delete(pastaBak, true);
+                }
+                progressBarBackup.Value += 1;
+                Application.DoEvents();
+
+                // Executa o RF32 INICIO para iniciar o sistema
+                Process.Start("RF32", "INICIO");
+
+                MessageBox.Show("🔄 Arquivos deletados, RF32 iniciado.", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                progressBarBackup.Value = 0; // Reseta a barra de progresso
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro durante a reconstrução: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBarBackup.Value = 0;
+            }
+                  
+        }
+    }
+}
+
