@@ -15,7 +15,8 @@ namespace WindowsFormsApp1
             Application.SetCompatibleTextRenderingDefault(false);
 
             // para desativar a tela de login comentente as duas linhas a baixo com //
-            //para voltar tire os comentario.
+            
+
             //FormLogin loginForm = new FormLogin();
             //if (loginForm.ShowDialog() == DialogResult.OK)
             {
