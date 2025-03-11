@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net;
 using System.IO.Compression;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Data.OleDb;
 
 
 namespace WindowsFormsApp1
@@ -148,8 +152,9 @@ namespace WindowsFormsApp1
             }
         }
 
-        // 🔹 Realiza o backup dos arquivos DBF e atualiza a barra de progresso
-        // 🔹 Método para fazer backup dos arquivos DBF e atualizar a barra de progresso
+
+
+
         private void btnBackupDBF_Click(object sender, EventArgs e)
         {
             try
@@ -176,7 +181,8 @@ namespace WindowsFormsApp1
                     return;
                 }
 
-                // Configura a barra de progresso
+                // Configurar a barra de progresso antes de iniciar o processo
+                progressBarBackup.Visible = true;
                 progressBarBackup.Minimum = 0;
                 progressBarBackup.Maximum = arquivosDBF.Length;
                 progressBarBackup.Value = 0;
@@ -186,24 +192,35 @@ namespace WindowsFormsApp1
                 {
                     string destino = Path.Combine(pastaBackup, Path.GetFileName(arquivo));
                     File.Copy(arquivo, destino, true); // Copia arquivo com sobrescrita
-                    progressBarBackup.Value += 1; // Atualiza a barra de progresso
-                    Application.DoEvents(); // Atualiza a interface do usuário
+
+                    // Atualiza a barra de progresso, garantindo que não ultrapasse o limite
+                    if (progressBarBackup.Value < progressBarBackup.Maximum)
+                    {
+                        progressBarBackup.Value += 1;
+                    }
+
+                    Application.DoEvents(); // Atualiza a interface do usuário para não travar
                 }
 
+                // Exibir mensagem de sucesso e ocultar a barra de progresso
                 MessageBox.Show("📂 Backup dos arquivos DBF concluído!", "Backup Finalizado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                progressBarBackup.Value = 0; // Reseta a barra de progresso após conclusão
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Erro ao realizar backup dos arquivos DBF: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                progressBarBackup.Value = 0; // Reseta a barra de progresso em caso de erro
+            }
+            finally
+            {
+                // Resetar e ocultar a barra de progresso no final do processo
+                progressBarBackup.Value = 0;
+                progressBarBackup.Visible = false;
             }
         }
 
 
 
 
-private void btnAtualizarVersao_Click(object sender, EventArgs e)
+        private void btnAtualizarVersao_Click(object sender, EventArgs e)
     {
         try
         {
@@ -321,10 +338,333 @@ private void btnAtualizarVersao_Click(object sender, EventArgs e)
             }
         }
 
+        private void btnCopiaxml_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Obtém o diretório base onde o executável está rodando
+                string pastaBase = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Define as subpastas para NFCE e NFE
+                string[] tipos = { "NFCE", "NFE" };
+
+                int arquivosCopiados = 0;
+
+                foreach (string tipo in tipos)
+                {
+                    string pastaTipo = Path.Combine(pastaBase, tipo);
+
+                    // Verifica se a pasta NFCE ou NFE existe
+                    if (!Directory.Exists(pastaTipo))
+                        continue;
+
+                    // Percorre as pastas de cada mês (01 a 12)
+                    for (int mes = 1; mes <= 12; mes++)
+                    {
+                        string pastaOrigem = Path.Combine(pastaTipo, mes.ToString("D2"), "XML");
+
+                        // Verifica se a pasta do mês existe
+                        if (Directory.Exists(pastaOrigem))
+                        {
+                            string[] arquivosXml = Directory.GetFiles(pastaOrigem, "*.xml");
+
+                            foreach (string caminhoArquivo in arquivosXml)
+                            {
+                                string conteudoXml = File.ReadAllText(caminhoArquivo);
+
+                                // Extrai a data da tag <dhEmi> (formato: YYYY-MM-DDTHH:MM:SS)
+                                int pos1 = conteudoXml.IndexOf("<dhEmi>");
+                                int pos2 = conteudoXml.IndexOf("</dhEmi>");
+
+                                if (pos1 > -1 && pos2 > pos1)
+                                {
+                                    string dataEmissao = conteudoXml.Substring(pos1 + 7, pos2 - pos1 - 7);
+                                    string ano = dataEmissao.Substring(0, 4); // Pega o ano (YYYY)
+                                    string mesXml = dataEmissao.Substring(5, 2); // Pega o mês (MM)
+
+                                    // Criar pasta do Ano e do Mês dentro do Ano para NFCE ou NFE
+                                    string novoCaminho = Path.Combine(pastaTipo, ano, mesXml);
+                                    if (!Directory.Exists(novoCaminho))
+                                    {
+                                        Directory.CreateDirectory(novoCaminho);
+                                    }
+
+                                    // Copiar o arquivo para o destino correto
+                                    string destino = Path.Combine(novoCaminho, Path.GetFileName(caminhoArquivo));
+
+                                    if (!File.Exists(destino))
+                                    {
+                                        File.Copy(caminhoArquivo, destino);
+                                        arquivosCopiados++;
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Arquivo já existe: " + destino);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Exibe mensagem final com o total de arquivos copiados
+                MessageBox.Show($"Processo concluído! {arquivosCopiados} arquivos XML foram copiados.", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao organizar XMLs: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BntCopiarxml_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Abre o diálogo para selecionar a pasta de destino
+                using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+                {
+                    dialog.Description = "Selecione a pasta onde os arquivos serão organizados";
+
+                    if (dialog.ShowDialog() != DialogResult.OK || string.IsNullOrEmpty(dialog.SelectedPath))
+                        return; // Se o usuário cancelar, sai da função
+
+                    string pastaDestino = dialog.SelectedPath;
+
+                    // Criar as pastas NFE e NFCE dentro da pasta escolhida
+                    string pastaNFE = Path.Combine(pastaDestino, "NFE");
+                    string pastaNFCE = Path.Combine(pastaDestino, "NFCE");
+
+                    Directory.CreateDirectory(pastaNFE);
+                    Directory.CreateDirectory(pastaNFCE);
+
+                    // Criar arquivo de log na pasta de destino
+                    string caminhoLog = Path.Combine(pastaDestino, "Log_Copias.txt");
+                    List<string> logEntries = new List<string>();
+
+                    logEntries.Add($"🔹 Processo iniciado: {DateTime.Now}");
+                    logEntries.Add("--------------------------------------------------");
+
+                    // Obtém o diretório onde o executável está rodando (onde estão os arquivos XML)
+                    string pastaBase = AppDomain.CurrentDomain.BaseDirectory;
+
+                    // Define os diretórios de origem para NFCE e NFE
+                    string[] tipos = { "NFCE", "NFE" };
+                    Dictionary<string, string> pastasOrigem = new Dictionary<string, string>
+            {
+                { "NFCE", Path.Combine(pastaBase, "NFCE") },
+                { "NFE", Path.Combine(pastaBase, "NFE") }
+            };
+                    Dictionary<string, string> pastasDestino = new Dictionary<string, string>
+            {
+                { "NFCE", pastaNFCE },
+                { "NFE", pastaNFE }
+            };
+
+                    int arquivosCopiadosNFE = 0;
+                    int arquivosCopiadosNFCE = 0;
+                    List<string> arquivosParaProcessar = new List<string>();
+
+                    // Coletar todos os arquivos XML das pastas de origem
+                    foreach (var tipo in tipos)
+                    {
+                        for (int mes = 1; mes <= 12; mes++)
+                        {
+                            string pastaMes = Path.Combine(pastasOrigem[tipo], mes.ToString("D2"), "XML");
+                            if (Directory.Exists(pastaMes))
+                            {
+                                arquivosParaProcessar.AddRange(Directory.GetFiles(pastaMes, "*.xml"));
+                            }
+                        }
+                    }
+
+                    // Se não houver arquivos para processar, exibe mensagem e sai
+                    if (arquivosParaProcessar.Count == 0)
+                    {
+                        MessageBox.Show("Nenhum arquivo XML encontrado para organizar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    // Configurar a barra de progresso
+                    progressBarXml.Visible = true;
+                    progressBarXml.Minimum = 0;
+                    progressBarXml.Maximum = arquivosParaProcessar.Count;
+                    progressBarXml.Value = 0;
+
+                    // Processar os arquivos XML
+                    foreach (string caminhoArquivo in arquivosParaProcessar)
+                    {
+                        string conteudoXml = File.ReadAllText(caminhoArquivo);
+
+                        // Extrai a data da tag <dhEmi> (formato: YYYY-MM-DDTHH:MM:SS)
+                        int pos1 = conteudoXml.IndexOf("<dhEmi>");
+                        int pos2 = conteudoXml.IndexOf("</dhEmi>");
+
+                        if (pos1 > -1 && pos2 > pos1)
+                        {
+                            string dataEmissao = conteudoXml.Substring(pos1 + 7, pos2 - pos1 - 7);
+                            string ano = dataEmissao.Substring(0, 4); // Pega o ano (YYYY)
+                            string mesXml = dataEmissao.Substring(5, 2); // Pega o mês (MM)
+
+                            // Identificar se o arquivo pertence a NFCE ou NFE
+                            string tipo = caminhoArquivo.Contains("\\NFCE\\") ? "NFCE" : "NFE";
+                            string destinoBase = pastasDestino[tipo];
+
+                            // Criar pasta do Ano e do Mês dentro de NFE/NFCE
+                            string novoCaminho = Path.Combine(destinoBase, ano, mesXml);
+                            if (!Directory.Exists(novoCaminho))
+                            {
+                                Directory.CreateDirectory(novoCaminho);
+                            }
+
+                            // Copiar o arquivo para o destino correto
+                            string destino = Path.Combine(novoCaminho, Path.GetFileName(caminhoArquivo));
+
+                            if (!File.Exists(destino))
+                            {
+                                File.Copy(caminhoArquivo, destino);
+
+                                // Atualiza contagem e log
+                                if (tipo == "NFE")
+                                    arquivosCopiadosNFE++;
+                                else
+                                    arquivosCopiadosNFCE++;
+
+                                logEntries.Add($"✔ Copiado: {Path.GetFileName(caminhoArquivo)} → {tipo}/{ano}/{mesXml}");
+                            }
+                        }
+
+                        // Atualizar a barra de progresso, garantindo que não ultrapasse o máximo
+                        if (progressBarXml.Value < progressBarXml.Maximum)
+                        {
+                            progressBarXml.Value++;
+                        }
+
+                        Application.DoEvents();
+                    }
+
+                    // Escrever resumo no log
+                    logEntries.Add("--------------------------------------------------");
+                    logEntries.Add($"📌 Total de arquivos copiados para NFE: {arquivosCopiadosNFE}");
+                    logEntries.Add($"📌 Total de arquivos copiados para NFCE: {arquivosCopiadosNFCE}");
+                    logEntries.Add($"🔚 Processo finalizado: {DateTime.Now}");
+                    logEntries.Add("\n");
+
+                    // Gravar log no arquivo
+                    File.AppendAllLines(caminhoLog, logEntries);
+
+                    // Esconder a barra de progresso ao finalizar
+                    progressBarXml.Visible = false;
+
+                    // Exibe mensagem final com o total de arquivos copiados
+                    MessageBox.Show($"Processo concluído! {arquivosCopiadosNFE + arquivosCopiadosNFCE} arquivos XML foram copiados.", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao organizar XMLs: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
 
 
+private void BtnRemoverXML_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            // 📌 Define a pasta onde o aplicativo está rodando
+            string pastaBase = AppDomain.CurrentDomain.BaseDirectory;
 
+            // 📌 Caminho correto para a pasta IMPORTAR (onde os XMLs estão)
+            string pastaImportar = Path.Combine(pastaBase, "XML", "IMPORTAR");
 
+            // 📌 Caminho do console e do arquivo de chaves processadas
+            string pastaFerramenta = Path.Combine(pastaBase, "Ferramenta_XML");
+            string consoleExe = Path.Combine(pastaFerramenta, "removerxml.exe");
+            string logFile = Path.Combine(pastaFerramenta, "chaves_processadas.txt");
+
+            // 🔹 Garante que o console seja executado antes da verificação
+            if (!File.Exists(logFile))
+            {
+                if (File.Exists(consoleExe))
+                {
+                    Process.Start(consoleExe).WaitForExit();
+                }
+                else
+                {
+                    MessageBox.Show("Erro: O arquivo 'removerxml.exe' não foi encontrado!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+            // 🔹 Verifica se o log de chaves processadas foi gerado corretamente
+            if (File.Exists(logFile))
+            {
+                string[] chavesRemover = File.ReadAllLines(logFile);
+
+                // 🔹 Removemos os XMLs da pasta XML/IMPORTAR (se existir)
+                if (Directory.Exists(pastaImportar))
+                {
+                    RemoverXMLProcessados(pastaImportar, chavesRemover);
+                }
+                else
+                {
+                    MessageBox.Show("A pasta 'XML/IMPORTAR' não foi encontrada!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Erro: O arquivo 'chaves_processadas.txt' ainda não foi gerado. Verifique o 'removerxml.exe'.",
+                                "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            // Exibir mensagem de sucesso
+            MessageBox.Show("Processo concluído! Os arquivos XML processados foram removidos.",
+                            "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Erro ao processar e remover XMLs: " + ex.Message,
+                            "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
+
+    // 🔹 Função para remover arquivos XML processados
+    private void RemoverXMLProcessados(string pasta, string[] chavesRemover)
+    {
+        if (Directory.Exists(pasta))
+        {
+            string[] arquivosXml = Directory.GetFiles(pasta, "*.xml");
+            int arquivosDeletados = 0;
+
+            foreach (string arquivo in arquivosXml)
+            {
+                string conteudo = File.ReadAllText(arquivo);
+                if (chavesRemover.Any(chave => conteudo.Contains(chave)))
+                {
+                    File.Delete(arquivo);
+                    arquivosDeletados++;
+                }
+            }
+
+            if (arquivosDeletados > 0)
+            {
+                MessageBox.Show($"{arquivosDeletados} arquivos removidos na pasta: XML/IMPORTAR",
+                                "Arquivos Removidos", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
+    }
