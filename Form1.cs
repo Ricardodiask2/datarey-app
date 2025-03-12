@@ -569,9 +569,8 @@ namespace WindowsFormsApp1
 
         private void BtnRemoverXML_Click(object sender, EventArgs e)
         {
-
+            //Ricardo Dias
         }
-    
 
 
 
@@ -580,5 +579,6 @@ namespace WindowsFormsApp1
 
 
 
-}
+
+    }
     }
