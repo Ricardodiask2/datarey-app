@@ -9,14 +9,3 @@ F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.exe
 F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.pdb
 F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.Form1.resources
 F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.FormLogin.resources
-D:\PROGRAMACAO\datarey-app\bin\Debug\WindowsFormsApp1.exe.config
-D:\PROGRAMACAO\datarey-app\bin\Debug\WindowsFormsApp1.exe
-D:\PROGRAMACAO\datarey-app\bin\Debug\WindowsFormsApp1.pdb
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.csproj.AssemblyReference.cache
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.Form1.resources
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.FormLogin.resources
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.Properties.Resources.resources
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.csproj.GenerateResource.cache
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.csproj.CoreCompileInputs.cache
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.exe
-D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.pdb

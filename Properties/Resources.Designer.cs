@@ -59,5 +59,15 @@ namespace WindowsFormsApp1.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Consulta um recurso localizado do tipo System.Byte[].
+        /// </summary>
+        internal static byte[] removerXml {
+            get {
+                object obj = ResourceManager.GetObject("removerXml", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }
