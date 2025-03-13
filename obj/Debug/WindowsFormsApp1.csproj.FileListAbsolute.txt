@@ -20,3 +20,5 @@ D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.csproj.GenerateResource.ca
 D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.csproj.CoreCompileInputs.cache
 D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.exe
 D:\PROGRAMACAO\datarey-app\obj\Debug\WindowsFormsApp1.pdb
+F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\bin\Debug\Guna.UI2.dll
+F:\PROGRAMACAO\PROJETOS\Datarey\WindowsFormsApp1\obj\Debug\WindowsF.A1EEDF9B.Up2Date

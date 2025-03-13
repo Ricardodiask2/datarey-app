@@ -17,8 +17,8 @@ namespace WindowsFormsApp1
             // para desativar a tela de login comentente as duas linhas a baixo com //
             
 
-            //FormLogin loginForm = new FormLogin();
-            //if (loginForm.ShowDialog() == DialogResult.OK)
+            FormLogin loginForm = new FormLogin();
+            if (loginForm.ShowDialog() == DialogResult.OK)
             {
                 Application.Run(new Form1()); // 🔹 Só abre o Form1 se o login for correto
             }

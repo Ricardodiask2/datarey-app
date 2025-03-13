@@ -11,6 +11,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Data.OleDb;
+using System.Security.Cryptography.X509Certificates;
+using Guna.UI2.WinForms;
+using System.Management;
+using System.Security.Cryptography;
+
 
 
 namespace WindowsFormsApp1
@@ -32,7 +37,7 @@ namespace WindowsFormsApp1
 
                 if (service.Status == ServiceControllerStatus.Running)
                 {
-                    StatusRDP.Text = "🟢 Área Remota Ativada";
+                    StatusRDP.Text = "🟢 Área Remota Ativa";
                     StatusRDP.ForeColor = Color.Green;
                 }
                 else
@@ -47,6 +52,10 @@ namespace WindowsFormsApp1
                 StatusRDP.ForeColor = Color.Orange;
             }
         }
+
+
+        
+
 
         // 🔹 Desativa a Área Remota
         private void btnDesativarRDP_Click(object sender, EventArgs e)
@@ -84,6 +93,11 @@ namespace WindowsFormsApp1
                 MessageBox.Show("Erro ao desativar a Área Remota: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        
+
+
+
 
         // 🔹 Ativa a Área Remota
         private void btnAtivarRDP_Click(object sender, EventArgs e)
@@ -127,6 +141,10 @@ namespace WindowsFormsApp1
                 MessageBox.Show("Erro ao encerrar RF32: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+
+
+
 
         private void btnReconstrucao_Click(object sender, EventArgs e)
         {
@@ -572,6 +590,80 @@ namespace WindowsFormsApp1
             //Ricardo Dias
         }
 
+        private void btnVoltar_Click(object sender, EventArgs e)
+        {
+            // Fecha todas as janelas e reinicia o aplicativo
+            Application.Restart();
+            Environment.Exit(0); // Garante que todos os processos sejam encerrados
+        }
+
+        private void guna2GroupBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+
+
+
+
+
+
+        private void btnRemoverCertificados_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 🔹 Remove certificados do usuário atual
+                RemoverCertificadosPessoais();
+
+                MessageBox.Show("✅ Certificados digitais removidos do usuário atual!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao remover certificados: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // 🔹 Remove os certificados do usuário atual
+        private void RemoverCertificadosPessoais()
+        {
+            try
+            {
+                X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                store.Open(OpenFlags.ReadWrite);
+
+                foreach (X509Certificate2 cert in store.Certificates)
+                {
+                    store.Remove(cert);
+                }
+
+                store.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao remover certificados do usuário atual: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+
+
+
+
+        private void btnSelecionarCertificado_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Certificados PFX (*.pfx)|*.pfx",
+                Title = "Selecione um Certificado Digital",
+                CheckFileExists = true,
+                CheckPathExists = true
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                txtCaminhoCertificado.Text = openFileDialog.FileName; // Exibe o caminho no TextBox
+            }
+        }
 
 
 
@@ -580,5 +672,95 @@ namespace WindowsFormsApp1
 
 
 
+
+
+
+
+
+
+        // 🔹 Evento que muda a aparência do campo de senha ao digitar
+        private void txtSenhaCertificado_TextChanged(object sender, EventArgs e)
+        {
+            txtSenhaCertificado.PasswordChar = '●';
+            txtSenhaCertificado.UseSystemPasswordChar = true;
+            txtSenhaCertificado.BorderRadius = 8;
+            txtSenhaCertificado.FillColor = Color.WhiteSmoke;
+            txtSenhaCertificado.ForeColor = Color.Black;
+            txtSenhaCertificado.BorderColor = Color.Gray;
+            txtSenhaCertificado.Font = new Font("Arial", 10, FontStyle.Bold);
+        }
+
+        // 🔹 Evento que detecta quando a tecla ENTER é pressionada
+        private void txtSenhaCertificado_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                btnInstalarCertificado.PerformClick(); // Simula o clique no botão de instalação
+                e.SuppressKeyPress = true; // Evita o "bip" da tecla Enter
+            }
+        }
+
+
+
+
+
+
+
+
+        private void txtCaminhoCertificado_TextChanged(object sender, EventArgs e)
+        {
+            txtCaminhoCertificado.ReadOnly = true;
+            txtCaminhoCertificado.FillColor = Color.WhiteSmoke;
+            txtCaminhoCertificado.BorderRadius = 8;
+            txtCaminhoCertificado.BorderColor = Color.Gray;
+            txtCaminhoCertificado.ForeColor = Color.DarkBlue;
+            txtCaminhoCertificado.Font = new Font("Arial", 10, FontStyle.Bold);
+        }
+
+
+
+
+
+
+
+
+        private void btnInstalarCertificado_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtCaminhoCertificado.Text))
+            {
+                MessageBox.Show("⚠ Selecione um certificado antes de instalar!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtSenhaCertificado.Text))
+            {
+                MessageBox.Show("⚠ Digite a senha do certificado!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string caminhoCertificado = txtCaminhoCertificado.Text;
+            string senha = txtSenhaCertificado.Text;
+
+            try
+            {
+                X509Certificate2 certificado = new X509Certificate2(caminhoCertificado, senha, X509KeyStorageFlags.PersistKeySet);
+                X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                store.Open(OpenFlags.ReadWrite);
+                store.Add(certificado);
+                store.Close();
+
+                MessageBox.Show("✅ Certificado instalado com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao instalar o certificado: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void StatusRDP_Click(object sender, EventArgs e)
+        {
+
+        }
     }
-    }
+}
+
